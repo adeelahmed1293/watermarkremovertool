@@ -1,0 +1,9 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+startCommand = "python main.py"
+numReplicas = 1
+
+[[build.setupCommand]]
+command = "pip install -r requirements.txt"

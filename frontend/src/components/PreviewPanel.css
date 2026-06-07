@@ -1,0 +1,101 @@
+.preview-panel {
+  background-color: var(--surface);
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.video-counter {
+  background-color: var(--surface-light);
+  border: 1px solid var(--border-color);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-weight: 500;
+}
+
+.confirmation-status {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+  font-weight: 500;
+}
+
+.confirmed {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: var(--success-color);
+  border: 1px solid var(--success-color);
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+}
+
+.pending {
+  background-color: rgba(234, 179, 8, 0.1);
+  color: var(--warning-color);
+  border: 1px solid var(--warning-color);
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+}
+
+.video-navigation {
+  display: flex;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.video-navigation button {
+  flex: 1;
+  background-color: var(--primary-color);
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.video-navigation button:hover:not(:disabled) {
+  background-color: var(--primary-dark);
+}
+
+.video-navigation button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.start-processing-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
+  padding: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.start-processing-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
+}
+
+.start-processing-btn:disabled {
+  opacity: 0.6;
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+}
+
+@media (max-width: 768px) {
+  .preview-panel {
+    padding: 1rem;
+  }
+
+  .video-navigation {
+    flex-direction: column;
+  }
+}
