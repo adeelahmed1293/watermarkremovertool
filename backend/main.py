@@ -1,6 +1,8 @@
 import os
+import time
+import shutil
 import logging
-from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
+from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Query
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -98,7 +100,6 @@ def encode_image_to_base64(image: np.ndarray) -> str:
 
 def cleanup_video_delayed(video_id: str, delay_seconds: int = 3600):
     """Schedule cleanup after delay (1 hour default) to allow download time."""
-    import time
     logger.info(f"Scheduling cleanup for {video_id} in {delay_seconds} seconds")
     time.sleep(delay_seconds)
     utils.cleanup_video(video_id)
@@ -251,7 +252,7 @@ async def process_video(request: ProcessRequest, background_tasks: BackgroundTas
         JOBS[request.video_id] = {
             "status": "processing",
             "progress": 0,
-            "start_time": __import__('time').time(),
+            "start_time": time.time(),
         }
         
         # Find the uploaded video
@@ -264,9 +265,12 @@ async def process_video(request: ProcessRequest, background_tasks: BackgroundTas
         bbox = (request.bbox.x, request.bbox.y, request.bbox.width, request.bbox.height)
         output_path = utils.get_processed_path(request.video_id)
         
-        # Process video
+        # Process video with progress tracking
+        def update_progress(progress):
+            JOBS[request.video_id]["progress"] = progress
+        
         processor = WatermarkProcessor(str(video_path))
-        success = processor.process_video(bbox, str(output_path))
+        success = processor.process_video(bbox, str(output_path), progress_callback=update_progress)
         processor.close_video()
         
         if not success:
@@ -275,14 +279,16 @@ async def process_video(request: ProcessRequest, background_tasks: BackgroundTas
         
         # Extract audio and merge if available
         try:
-            temp_audio = tempfile.NamedTemporaryFile(suffix=".aac", delete=False).name
+            temp_audio = tempfile.NamedTemporaryFile(suffix=".wav", delete=False).name
             if utils.extract_audio(str(video_path), temp_audio):
                 output_with_audio = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False).name
                 if utils.merge_audio(str(output_path), temp_audio, output_with_audio):
-                    # Replace output file
-                    import shutil
                     shutil.move(output_with_audio, str(output_path))
                     logger.info(f"Audio merged successfully for {request.video_id}")
+                else:
+                    logger.warning(f"Audio merge command failed for {request.video_id}")
+            else:
+                logger.warning(f"Audio extraction failed for {request.video_id} - video may have no audio track")
         except Exception as e:
             logger.warning(f"Could not merge audio: {e}")
         
@@ -307,17 +313,23 @@ async def process_video(request: ProcessRequest, background_tasks: BackgroundTas
 
 
 @app.get("/download/{video_id}")
-async def download_video(video_id: str):
+async def download_video(video_id: str, filename: str = Query(None)):
     """Download processed video."""
     processed_path = utils.get_processed_path(video_id)
     
     if not processed_path.exists():
         raise HTTPException(status_code=404, detail="Processed video not found")
     
+    # Use the provided filename if available, otherwise use a default
+    if filename:
+        download_filename = filename
+    else:
+        download_filename = f"watermark_removed_{video_id}.mp4"
+    
     return FileResponse(
         processed_path,
         media_type="video/mp4",
-        filename=f"watermark_removed_{video_id}.mp4"
+        filename=download_filename
     )
 
 
@@ -330,42 +342,61 @@ async def process_bulk(request: ProcessBulkRequest, background_tasks: Background
         processed_files = []
         
         for item in request.items:
+            JOBS[item.video_id] = {
+                "status": "processing",
+                "progress": 0,
+                "start_time": time.time(),
+            }
+            
             video_files = list(utils.UPLOAD_DIR.glob(f"{item.video_id}_*"))
             if not video_files:
                 logger.warning(f"Video not found: {item.video_id}")
+                JOBS[item.video_id]["status"] = "failed"
                 continue
             
             video_path = video_files[0]
             bbox = (item.bbox.x, item.bbox.y, item.bbox.width, item.bbox.height)
             output_path = utils.get_processed_path(item.video_id)
             
-            # Process video
+            # Process video with progress tracking
+            def update_progress(progress, vid=item.video_id):
+                JOBS[vid]["progress"] = progress
+            
             processor = WatermarkProcessor(str(video_path))
-            success = processor.process_video(bbox, str(output_path))
+            success = processor.process_video(bbox, str(output_path), progress_callback=update_progress)
             processor.close_video()
             
             if success:
-                processed_files.append((item.video_id, output_path))
-                
                 # Try to merge audio
                 try:
-                    temp_audio = tempfile.NamedTemporaryFile(suffix=".aac", delete=False).name
+                    temp_audio = tempfile.NamedTemporaryFile(suffix=".wav", delete=False).name
                     if utils.extract_audio(str(video_path), temp_audio):
                         output_with_audio = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False).name
                         if utils.merge_audio(str(output_path), temp_audio, output_with_audio):
-                            import shutil
                             shutil.move(output_with_audio, str(output_path))
                 except Exception as e:
                     logger.warning(f"Could not merge audio: {e}")
+                
+                JOBS[item.video_id]["status"] = "completed"
+                JOBS[item.video_id]["progress"] = 100
+                processed_files.append((item.video_id, output_path))
+            else:
+                JOBS[item.video_id]["status"] = "failed"
         
         if not processed_files:
             raise HTTPException(status_code=500, detail="No videos processed successfully")
         
-        # Create ZIP file
+        # Create ZIP file with original filenames
         zip_path = tempfile.NamedTemporaryFile(suffix=".zip", delete=False).name
         with zipfile.ZipFile(zip_path, 'w') as zipf:
             for video_id, file_path in processed_files:
-                zipf.write(file_path, arcname=f"watermark_removed_{video_id}.mp4")
+                # Recover original filename from upload path
+                video_files = list(utils.UPLOAD_DIR.glob(f"{video_id}_*"))
+                original_filename = "video.mp4"
+                if video_files:
+                    upload_name = video_files[0].name
+                    original_filename = upload_name[len(video_id) + 1:]
+                zipf.write(file_path, arcname=original_filename)
         
         # Schedule cleanup with delay to allow download
         for video_id, _ in processed_files:

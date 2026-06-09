@@ -80,14 +80,16 @@ export const processBulkVideos = async (items) => {
 
   const response = await api.post('/process-bulk', {
     items: formattedItems,
+  }, {
+    responseType: 'blob',
   });
 
   return response.data;
 };
 
 // Download video
-export const downloadVideo = (videoId) => {
-  return `${API_BASE_URL}/download/${videoId}`;
+export const downloadVideo = (videoId, filename) => {
+  return `${API_BASE_URL}/download/${videoId}?filename=${encodeURIComponent(filename)}`;
 };
 
 // Get job status

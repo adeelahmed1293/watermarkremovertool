@@ -9,8 +9,8 @@ export default function DownloadPanel({
   onError,
   isBulkMode,
 }) {
-  const handleDownloadSingle = (videoId) => {
-    const link = downloadVideo(videoId);
+  const handleDownloadSingle = (videoId, filename) => {
+    const link = downloadVideo(videoId, filename);
     window.open(link, '_blank');
   };
 
@@ -21,9 +21,17 @@ export default function DownloadPanel({
         bbox: videoRegions[video.video_id],
       }));
 
-      const response = await processBulkVideos(items);
-      const zipUrl = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/download-bulk`;
-      window.open(zipUrl, '_blank');
+      const zipBlob = await processBulkVideos(items);
+      
+      // Create a download link from the blob
+      const url = window.URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'watermark_removed_videos.zip';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       onError(`Download failed: ${error.message}`);
     }
@@ -48,7 +56,7 @@ export default function DownloadPanel({
               </span>
             </div>
             <button
-              onClick={() => handleDownloadSingle(video.video_id)}
+              onClick={() => handleDownloadSingle(video.video_id, video.filename)}
               className="download-btn"
             >
               ⬇️ Download

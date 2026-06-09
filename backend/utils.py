@@ -65,11 +65,14 @@ def extract_audio(input_video: str, output_audio: str) -> bool:
         cmd = [
             "ffmpeg",
             "-i", input_video,
-            "-q:a", "9",
-            "-n",  # Don't overwrite
+            "-vn",
+            "-acodec", "pcm_s16le",
+            "-y",
             output_audio
         ]
         result = subprocess.run(cmd, capture_output=True, timeout=300)
+        if result.returncode != 0:
+            logger.warning(f"Audio extraction failed: {result.stderr.decode()}")
         return result.returncode == 0
     except Exception as e:
         logger.warning(f"Could not extract audio: {e}")
@@ -85,12 +88,15 @@ def merge_audio(input_video: str, audio_file: str, output_video: str) -> bool:
             "-i", audio_file,
             "-c:v", "copy",
             "-c:a", "aac",
+            "-b:a", "192k",
             "-map", "0:v:0",
             "-map", "1:a:0",
-            "-n",  # Don't overwrite
+            "-y",
             output_video
         ]
         result = subprocess.run(cmd, capture_output=True, timeout=300)
+        if result.returncode != 0:
+            logger.warning(f"Audio merge failed: {result.stderr.decode()}")
         return result.returncode == 0
     except Exception as e:
         logger.warning(f"Could not merge audio: {e}")
