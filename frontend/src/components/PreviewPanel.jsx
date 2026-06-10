@@ -64,8 +64,10 @@ export default function PreviewPanel({
       <h2>Step 2: Select Watermark Region</h2>
 
       {isBulkMode && (
-        <div className="video-counter">
-          Video {currentVideoIndex + 1} of {uploadedVideos.length}
+        <div className="video-counter-wrapper">
+          <div className="video-counter">
+            Video {currentVideoIndex + 1} of {uploadedVideos.length}
+          </div>
         </div>
       )}
 
@@ -79,19 +81,37 @@ export default function PreviewPanel({
 
       <div className="confirmation-status">
         {videoRegions[currentVideo.video_id] ? (
-          <span className="confirmed">✓ Region confirmed for this video</span>
+          <span className="confirmed">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Region confirmed for this video
+          </span>
         ) : (
-          <span className="pending">⚠ Select region for this video</span>
+          <span className="pending">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            Select region for this video
+          </span>
         )}
       </div>
 
       {isBulkMode && uploadedVideos.length > 1 && (
         <div className="video-navigation">
           <button onClick={prevVideo} disabled={currentVideoIndex === 0}>
-            ← Previous Video
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px', verticalAlign: 'middle' }}>
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+            Previous Video
           </button>
           <button onClick={nextVideo} disabled={currentVideoIndex === uploadedVideos.length - 1}>
-            Next Video →
+            Next Video
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: '6px', verticalAlign: 'middle' }}>
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
           </button>
         </div>
       )}
@@ -103,7 +123,10 @@ export default function PreviewPanel({
             disabled={!allConfirmed}
             className="start-processing-btn"
           >
-            {allConfirmed ? 'Start Processing All Videos' : 'Complete all videos first'}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            {allConfirmed ? 'Start Processing All Videos' : 'Confirm all regions first'}
           </button>
         ) : null}
       </div>

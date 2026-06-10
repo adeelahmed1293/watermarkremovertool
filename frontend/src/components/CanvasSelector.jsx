@@ -106,10 +106,15 @@ export default function CanvasSelector({
     const width = Math.abs(toX - fromX);
     const height = Math.abs(toY - fromY);
 
-    ctx.strokeStyle = '#ff3333';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
+    ctx.strokeStyle = '#c084fc'; // Light purple neon
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([6, 4]);
     ctx.strokeRect(x, y, width, height);
+    
+    // Transparent fill inside the selection
+    ctx.fillStyle = 'rgba(192, 132, 252, 0.18)';
+    ctx.fillRect(x, y, width, height);
+    
     ctx.setLineDash([]);
 
     return { x, y, width, height };
@@ -226,10 +231,42 @@ export default function CanvasSelector({
 
       <div className="actions">
         <button onClick={handlePreview} disabled={isLoadingPreview}>
-          {isLoadingPreview ? 'Generating Preview...' : 'Preview Removal'}
+          {isLoadingPreview ? (
+            <>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1.5s linear infinite', marginRight: '6px' }}>
+                <line x1="12" y1="2" x2="12" y2="6"></line>
+                <line x1="12" y1="18" x2="12" y2="22"></line>
+                <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+                <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+                <line x1="2" y1="12" x2="6" y2="12"></line>
+                <line x1="18" y1="12" x2="22" y2="12"></line>
+                <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+                <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+              </svg>
+              Generating...
+            </>
+          ) : (
+            <>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              Preview Removal
+            </>
+          )}
         </button>
-        <button onClick={handleClear}>Clear Selection</button>
+        <button onClick={handleClear}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+          </svg>
+          Clear Selection
+        </button>
         <button onClick={handleConfirm} className="confirm-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
           Confirm Region
         </button>
       </div>
